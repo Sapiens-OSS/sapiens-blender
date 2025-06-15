@@ -20,7 +20,7 @@ def get_export_folder(blend_path):
     return export_dir
 
 def get_export_path(blend_path):
-    return get_export_folder(blend_path) / Path(blend_path).name
+    return get_export_folder(blend_path) / Path(blend_path).stem
 
 class SAPIENS_OT_export_parts(bpy.types.Operator):
     bl_idname = "sapiens.export_parts"
@@ -186,7 +186,9 @@ class SAPIENS_OT_export_empties(bpy.types.Operator):
         bpy.ops.export_scene.gltf(
             filepath=str(export_path),
             export_format='GLB',
-            use_selection=True
+            use_selection=True,
+            export_apply=True,
+            export_materials='PLACEHOLDER'
         )
 
         # Restore scene
