@@ -123,21 +123,16 @@ class SAPIENS_OT_export_empties(bpy.types.Operator):
     bl_label = "Export Empties"
     bl_description = "Exports the scene with all meshes replaced by empties."
 
-    # Maps the number of times each model has appeared.
-    model_counts = {}
-    def get_empty_name(self, mesh_name : str):
-        if "."  in mesh_name:
+    def get_empty_name(mesh_name: str, model_counts: dict):
+        if "." in mesh_name:
             mesh_name = mesh_name.split(".")[0]
-        
+
         if "_" in mesh_name:
             mesh_name = mesh_name.split("_")[1]
-        
-        index = 0
-        if mesh_name in self.model_counts:
-            index = self.model_counts[mesh_name]
-        index += 1
-        self.model_counts[mesh_name] = index
-            
+
+        index = model_counts.get(mesh_name, 0) + 1
+        model_counts[mesh_name] = index
+
         return f"{mesh_name}_{str(index)}"
     
     def execute(self, context):
@@ -149,6 +144,7 @@ class SAPIENS_OT_export_empties(bpy.types.Operator):
         replacements = []
         new_empties = []
 
+        counts = {}
         # Replace all mesh objects with empties
         for obj in bpy.data.objects:
             if obj.type == 'MESH':
@@ -156,7 +152,7 @@ class SAPIENS_OT_export_empties(bpy.types.Operator):
                 renamed_name = f"{original_name}_original"
                 obj.name = renamed_name
 
-                empty = bpy.data.objects.new(self.get_empty_name(original_name), None)
+                empty = bpy.data.objects.new(self.get_empty_name(original_name, counts), None)
                 empty.empty_display_type = 'PLAIN_AXES'
                 empty.empty_display_size = 0.5
                 empty.matrix_world = obj.matrix_world
