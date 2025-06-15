@@ -270,7 +270,7 @@ class SAPIENS_OT_set_empty_types(bpy.types.Operator):
         name = obj.name.lower()
         if "box" in name or "cube" in name:
             return "CUBE"
-        if "sphere" in name or "seat" in name:
+        if "sphere" in name or "seat" in name or "radius" in name:
             return "SPHERE"
         if "store" in name:
             return "PLAIN_AXES"
