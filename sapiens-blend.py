@@ -81,7 +81,8 @@ class SAPIENS_OT_export_parts(bpy.types.Operator):
             bpy.ops.export_scene.gltf(
                 filepath=str(export_path),
                 export_format='GLB',
-                use_selection=True
+                use_selection=True,
+                export_apply=True,
             )
             
             obj.matrix_world = cached_matrix
