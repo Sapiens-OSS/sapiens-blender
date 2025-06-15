@@ -47,9 +47,7 @@ class SAPIENS_OT_export_parts(bpy.types.Operator):
             self.report({'ERROR'}, "Failed to resolve export folder.")
             return {'CANCELLED'}
 
-        blend_name = blend_path.stem
-        part_export_dir = export_root / blend_name
-        part_export_dir.mkdir(parents=True, exist_ok=True)
+        export_root.mkdir(parents=True, exist_ok=True)
 
         original_selection = context.selected_objects.copy()
         original_active = context.view_layer.objects.active
@@ -79,7 +77,7 @@ class SAPIENS_OT_export_parts(bpy.types.Operator):
             obj.rotation_euler = (0.0, 0.0, 0.0)
             obj.scale = (1.0, 1.0, 1.0)
 
-            export_path = part_export_dir / f"{model_name}.glb"
+            export_path = export_root / f"{model_name}.glb"
             bpy.ops.export_scene.gltf(
                 filepath=str(export_path),
                 export_format='GLB',
