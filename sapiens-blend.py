@@ -123,7 +123,7 @@ class SAPIENS_OT_export_empties(bpy.types.Operator):
     bl_label = "Export Empties"
     bl_description = "Exports the scene with all meshes replaced by empties."
 
-    def get_empty_name(mesh_name: str, model_counts: dict):
+    def get_empty_name(self, mesh_name: str, model_counts: dict):
         if "." in mesh_name:
             mesh_name = mesh_name.split(".")[0]
 
