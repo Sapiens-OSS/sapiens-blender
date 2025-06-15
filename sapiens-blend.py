@@ -93,7 +93,7 @@ class SAPIENS_OT_export_parts(bpy.types.Operator):
             obj.select_set(True)
         context.view_layer.objects.active = original_active
 
-        self.report({'INFO'}, f"Exported {exported_models} to '{part_export_dir}'")
+        self.report({'INFO'}, f"Exported {exported_models} to '{export_path}'")
         return {'FINISHED'}
     
 class SAPIENS_OT_add_buildables(bpy.types.Operator):
