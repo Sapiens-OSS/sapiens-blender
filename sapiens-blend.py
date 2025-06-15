@@ -106,7 +106,7 @@ class SAPIENS_OT_add_buildables(bpy.types.Operator):
         bounding_radius.empty_display_type = 'SPHERE'
         bpy.context.collection.objects.link(bounding_radius)
         
-        attach_box = bpy.data.objects.new("place_attachBox_1", None)
+        attach_box = bpy.data.objects.new("placeAttach_box_1", None)
         attach_box.empty_display_type = 'CUBE'
         bpy.context.collection.objects.link(attach_box)
 
