@@ -188,7 +188,8 @@ class SAPIENS_OT_export_empties(bpy.types.Operator):
             export_format='GLB',
             use_selection=True,
             export_apply=True,
-            export_materials='PLACEHOLDER'
+            export_materials='PLACEHOLDER',
+            export_cameras=True
         )
 
         # Restore scene
