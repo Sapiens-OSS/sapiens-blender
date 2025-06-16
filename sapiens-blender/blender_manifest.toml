@@ -1,0 +1,9 @@
+blender_version_min = "4.2.0"
+id = "sapiens_blender"
+license = ["MIT"]
+maintainer = "SirLich"
+name = "Sapiens Blender"
+schema_version = "1.0.0"
+tagline = "Adds support for modding Sapiens into Blender."
+type = "add-on"
+version = "1.0.0"

@@ -1,12 +1,7 @@
 import bpy
 import math
 from pathlib import Path
-
-bl_info = {
-    "name": "Sapiens Blender",
-    "blender": (4, 3, 2),
-    "category": "Sapiens",
-}
+import tomllib
 
 def get_export_folder(blend_path):
     blend_path = Path(bpy.data.filepath)
@@ -21,6 +16,20 @@ def get_export_folder(blend_path):
 
 def get_export_path(blend_path):
     return get_export_folder(blend_path) / Path(blend_path).stem
+
+# ## Wraps a mesh object, allowing to sort and handle some aspects of the mesh easier.
+# class MeshWrapper():
+#     mesh_name : str
+#     material : str
+
+#     def __init__(self, mesh):
+        
+
+def get_extension_version() -> str:
+    config_path = Path(__file__).parent / "blender_manifest.toml"
+    with open(config_path, "rb") as config:
+        return tomllib.load(config).get("version", "Unknown")
+    return "Failed"
 
 class SAPIENS_OT_export_parts(bpy.types.Operator):
     bl_idname = "sapiens.export_parts"
@@ -290,22 +299,28 @@ class VIEW3D_PT_sapiens(bpy.types.Panel):
     bl_category = "Sapiens"
     
     def draw(self, context):
-        self.layout.label(text="Empties")
-        empty_row = self.layout.row()
+        self.layout.label(text=f"Version: {get_extension_version()}")
+        self.layout.separator()
+
+        empties_box = self.layout.box()
+        empties_box.label(text="Empties")
+        empty_row = empties_box.row()
         empty_row.operator("sapiens.scale_empties")
         empty_row.operator("sapiens.set_empty_types")
         
         
-        self.layout.label(text="Quick Actions")
-        quick_row = self.layout.row()
+        quick_box = self.layout.box()
+        quick_box.label(text="Quick Actions")
+        quick_row = quick_box.row()
         quick_row.operator("sapiens.add_camera")
         quick_row.operator("sapiens.add_buildables")
 
-        self.layout.label(text="Export")
-        export_row = self.layout.row()
+        export_box = self.layout.box()
+        export_box.label(text="Export")
+        export_row = export_box.row()
         export_row.operator("sapiens.export")
         export_row.operator("sapiens.export_empties")
-        export_row_2 = self.layout.row()
+        export_row_2 = export_box.row()
         export_row_2.operator("sapiens.export_parts")
 
 def register():

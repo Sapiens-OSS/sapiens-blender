@@ -49,3 +49,8 @@ This option is intended to be used alongside of `Export Empties`. In principle i
 
 Even though we had 4 chair legs in our model, only one is exported. This single model will be reused for all chair legs within Sapiens.
 
+# Version History
+
+## 1.0.0
+
+Initial release, providing the basic support for sapiens models.
