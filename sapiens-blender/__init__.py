@@ -1,5 +1,6 @@
 import bpy
 import math
+import json
 from pathlib import Path
 import tomllib
 
@@ -16,6 +17,12 @@ def get_export_folder(blend_path):
 
 def get_export_path(blend_path):
     return get_export_folder(blend_path) / Path(blend_path).stem
+
+def get_material_file_path() -> Path:
+    blend_path = Path(bpy.data.filepath)
+    return blend_path.parent.parent / "hammerstone" / "shared" / "blender_materials.json"
+
+
 
 # ## Wraps a mesh object, allowing to sort and handle some aspects of the mesh easier.
 # class MeshWrapper():
@@ -126,7 +133,170 @@ class SAPIENS_OT_add_buildables(bpy.types.Operator):
 
         self.report({'INFO'}, "Done.")
         return {'FINISHED'}
+
+class MaterialFile():
+
+    """
+    Wrapper around Json material file
+    """
+
+    def __init__(self, filepath : Path):
+        self.filepath = filepath
+        self.ensure_file_exists()
+        self.index = self.build_index()
+
+    def build_index(self):
+        with open(get_material_file_path(), "r") as f:
+            data = json.load(f)
+
+        index = {}
+        for material in data["hammerstone:global_definitions"]["hs_materials"]:
+            index[material["identifier"]] = material
+        return index
+
+    @staticmethod
+    def get_default_data():
+        return json.loads(
+"""
+{
+    "hammerstone:global_definitions": {
+        "hs_materials": []
+    }
+}
+"""
+        )
+
+    def ensure_file_exists(self):
+        if self.filepath.exists():
+            return
         
+        self.filepath.parent.mkdir(exist_ok=True, parents=True)
+        
+        with open(self.filepath, "w") as f:
+            json.dump(MaterialFile.get_default_data(), f)
+
+    @staticmethod
+    def get_default_path() -> Path:
+        blend_path = Path(bpy.data.filepath)
+        return blend_path.parent.parent / "hammerstone" / "shared" / "blender_materials.json"
+
+    @staticmethod
+    def open():
+        return MaterialFile(MaterialFile.get_default_path())
+    
+    def save(self):
+        data = MaterialFile.get_default_data()
+        data["hammerstone:global_definitions"]["hs_materials"] = self.index.values()
+
+        with open(self.filepath, "w") as f:
+            json.dump(data, f)
+        
+    def write_material(self, material):
+        self.index[material.name] = MaterialFile.material_to_json(material)
+
+    @staticmethod
+    def material_to_json(material):
+        bsdf = None
+        if material and material.use_nodes:
+            for node in material.node_tree.nodes:
+                if node.type == 'BSDF_PRINCIPLED':
+                    bsdf = node
+                    break
+
+        if not bsdf:
+            print(f"No Principled BSDF found in material {material.name}")
+            return None
+
+        # Extract values
+        color = bsdf.inputs['Base Color'].default_value[:3]  # RGB only
+        metal = bsdf.inputs['Metallic'].default_value
+        roughness = bsdf.inputs['Roughness'].default_value
+
+        # Format data
+        mat_data = {
+            "identifier": material.name,
+            "color": [round(c, 3) for c in color],
+            "metal": round(metal, 3),
+            "roughness": round(roughness, 3)
+        }
+
+        return mat_data
+    
+    @staticmethod
+    def json_to_material(data):
+        name = data.get("identifier", "Material")
+        color = data.get("color", [1.0, 1.0, 1.0])
+        metal = data.get("metal", 0.0)
+        roughness = data.get("roughness", 0.5)
+
+        # Get or create the material
+        material = bpy.data.materials.get(name)
+        if not material:
+            material = bpy.data.materials.new(name=name)
+            material.use_nodes = True
+
+        # Get the node tree
+        nodes = material.node_tree.nodes
+        links = material.node_tree.links
+
+        # Clear existing nodes
+        nodes.clear()
+
+        # Create necessary nodes
+        output_node = nodes.new(type='ShaderNodeOutputMaterial')
+        output_node.location = (300, 0)
+
+        bsdf_node = nodes.new(type='ShaderNodeBsdfPrincipled')
+        bsdf_node.location = (0, 0)
+
+        # Set values
+        bsdf_node.inputs['Base Color'].default_value = (*color, 1.0)  # RGBA
+        bsdf_node.inputs['Metallic'].default_value = metal
+        bsdf_node.inputs['Roughness'].default_value = roughness
+
+        # Link BSDF to Output
+        links.new(bsdf_node.outputs['BSDF'], output_node.inputs['Surface'])
+
+        return material
+
+
+class SAPIENS_OT_import_materials(bpy.types.Operator):
+    bl_idname = "sapiens.import_materials"
+    bl_label = "Import Materials"
+    bl_description = "Imports materials from hammerstone/shared/blender_materials."
+
+    def execute(self, context):
+        return {'FINISHED'}
+    
+class SAPIENS_OT_export_materials(bpy.types.Operator):
+    bl_idname = "sapiens.export_materials"
+    bl_label = "Export Materials"
+    bl_description = "Exports materials from hammerstone/shared/blender_materials."
+
+    def build_material_index(self, data):
+        index = {}
+        for material in data["hammerstone:global_definitions"]["hs_materials"]:
+            index[material["identifier"]] = material
+        return index
+
+
+    def execute(self, context):
+        material_file = MaterialFile.open()
+
+        for material in bpy.data.materials:
+            material_file.write_material(material)
+
+        material_file.save()
+
+        return {'FINISHED'}
+    
+class SAPIENS_OT_remove_duplicate_materials(bpy.types.Operator):
+    bl_idname = "sapiens.remove_duplicate_materials"
+    bl_label = "Remove Duplicates"
+    bl_description = "Deletes any materials like 'bone.001' and replaces them with the proper material name (bone)."
+
+    def execute(self, context):
+        return {'FINISHED'}
 
 class SAPIENS_OT_export_empties(bpy.types.Operator):
     bl_idname = "sapiens.export_empties"
@@ -323,6 +493,14 @@ class VIEW3D_PT_sapiens(bpy.types.Panel):
         export_row_2 = export_box.row()
         export_row_2.operator("sapiens.export_parts")
 
+        materials_box = self.layout.box()
+        materials_box.label(text="Materials")
+        materials_row = materials_box.row()
+        materials_row.operator("sapiens.import_materials")
+        materials_row.operator("sapiens.export_materials")
+        materials_row2 = materials_box.row()
+        materials_row2.operator("sapiens.remove_duplicate_materials")
+
 def register():
     bpy.utils.register_class(SAPIENS_OT_scale_empties)
     bpy.utils.register_class(SAPIENS_OT_set_empty_types)
@@ -331,6 +509,9 @@ def register():
     bpy.utils.register_class(SAPIENS_OT_export)
     bpy.utils.register_class(SAPIENS_OT_export_empties)
     bpy.utils.register_class(SAPIENS_OT_export_parts)
+    bpy.utils.register_class(SAPIENS_OT_import_materials)
+    bpy.utils.register_class(SAPIENS_OT_export_materials)
+    bpy.utils.register_class(SAPIENS_OT_remove_duplicate_materials)
     
     bpy.utils.register_class(VIEW3D_PT_sapiens)
 
@@ -342,6 +523,9 @@ def unregister():
     bpy.utils.unregister_class(SAPIENS_OT_export)
     bpy.utils.unregister_class(SAPIENS_OT_export_empties)
     bpy.utils.unregister_class(SAPIENS_OT_export_parts)
+    bpy.utils.unregister_class(SAPIENS_OT_import_materials)
+    bpy.utils.unregister_class(SAPIENS_OT_export_materials)
+    bpy.utils.unregister_class(SAPIENS_OT_remove_duplicate_materials)
     
     bpy.utils.unregister_class(VIEW3D_PT_sapiens)
 

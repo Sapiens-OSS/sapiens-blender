@@ -49,6 +49,10 @@ This option is intended to be used alongside of `Export Empties`. In principle i
 
 Even though we had 4 chair legs in our model, only one is exported. This single model will be reused for all chair legs within Sapiens.
 
+# Development
+
+You can help develop the addon by installing [this extension](https://marketplace.visualstudio.com/items?itemName=JacquesLucke.blender-development), and following the instructions there. PRs and issues welcome.
+
 # Version History
 
 ## 1.0.0
