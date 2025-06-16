@@ -186,10 +186,18 @@ class MaterialFile():
     
     def save(self):
         data = MaterialFile.get_default_data()
-        data["hammerstone:global_definitions"]["hs_materials"] = self.index.values()
+        print(self.index.values())
+
+        data["hammerstone:global_definitions"]["hs_materials"] = self.get_materials()
 
         with open(self.filepath, "w") as f:
             json.dump(data, f)
+    
+    def get_materials(self):
+        materials = []
+        for material in self.index.values():
+            materials.append(material)
+        return materials
         
     def write_material(self, material):
         self.index[material.name] = MaterialFile.material_to_json(material)
@@ -266,19 +274,17 @@ class SAPIENS_OT_import_materials(bpy.types.Operator):
     bl_description = "Imports materials from hammerstone/shared/blender_materials."
 
     def execute(self, context):
+        material_file = MaterialFile.open()
+
+        for material in material_file.get_materials():
+            MaterialFile.json_to_material(material)
+    
         return {'FINISHED'}
     
 class SAPIENS_OT_export_materials(bpy.types.Operator):
     bl_idname = "sapiens.export_materials"
     bl_label = "Export Materials"
     bl_description = "Exports materials from hammerstone/shared/blender_materials."
-
-    def build_material_index(self, data):
-        index = {}
-        for material in data["hammerstone:global_definitions"]["hs_materials"]:
-            index[material["identifier"]] = material
-        return index
-
 
     def execute(self, context):
         material_file = MaterialFile.open()
