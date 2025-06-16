@@ -3,6 +3,7 @@ import math
 import json
 from pathlib import Path
 import tomllib
+import re
 
 def get_export_folder(blend_path):
     blend_path = Path(bpy.data.filepath)
@@ -302,6 +303,34 @@ class SAPIENS_OT_remove_duplicate_materials(bpy.types.Operator):
     bl_description = "Deletes any materials like 'bone.001' and replaces them with the proper material name (bone)."
 
     def execute(self, context):
+        suffix_pattern = re.compile(r"(.*)\.(\d{3})$")
+        renamed_materials = {}
+
+        for mat in list(bpy.data.materials):  # Avoid modifying list during iteration
+            match = suffix_pattern.match(mat.name)
+            if match:
+                base_name = match.group(1)
+                base_mat = bpy.data.materials.get(base_name)
+
+                if base_mat:
+                    # Replace users of the duplicate material
+                    for obj in bpy.data.objects:
+                        if obj.type == 'MESH':
+                            for slot in obj.material_slots:
+                                if slot.material == mat:
+                                    slot.material = base_mat
+                    renamed_materials[mat.name] = f"Replaced with '{base_name}' and removed"
+                    
+                    # Remove the duplicate material
+                    bpy.data.materials.remove(mat)
+                else:
+                    if not bpy.data.materials.get(base_name):
+                        mat.name = base_name
+                        renamed_materials[mat.name] = "Renamed (no original existed)"
+                    else:
+                        renamed_materials[mat.name] = "Name conflict; not renamed"
+
+        self.report({'INFO'}, f"Processed {len(renamed_materials)} materials.")
         return {'FINISHED'}
 
 class SAPIENS_OT_export_empties(bpy.types.Operator):
