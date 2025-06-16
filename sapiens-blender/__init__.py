@@ -22,15 +22,6 @@ def get_export_path(blend_path):
 def get_material_file_path() -> Path:
     blend_path = Path(bpy.data.filepath)
     return blend_path.parent.parent / "hammerstone" / "shared" / "blender_materials.json"
-
-
-
-# ## Wraps a mesh object, allowing to sort and handle some aspects of the mesh easier.
-# class MeshWrapper():
-#     mesh_name : str
-#     material : str
-
-#     def __init__(self, mesh):
         
 
 def get_extension_version() -> str:
