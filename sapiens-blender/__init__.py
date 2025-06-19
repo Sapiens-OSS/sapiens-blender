@@ -461,6 +461,30 @@ class SAPIENS_OT_scale_empties(bpy.types.Operator):
         
         return {'FINISHED'}
     
+class SAPIENS_OT_hide_empties(bpy.types.Operator):
+    bl_idname = "sapiens.hide_empties"
+    bl_label = "Hide Empties"
+    bl_description = "Hides all empties."
+    
+    def execute(self, context):
+        for obj in context.scene.objects:
+            if obj.type == 'EMPTY':
+                obj.hide_set(True)
+        
+        return {'FINISHED'}
+    
+class SAPIENS_OT_show_empties(bpy.types.Operator):
+    bl_idname = "sapiens.show_empties"
+    bl_label = "Shows Empties"
+    bl_description = "Shows all empties."
+    
+    def execute(self, context):
+        for obj in context.scene.objects:
+            if obj.type == 'EMPTY':
+                obj.hide_set(False)
+        
+        return {'FINISHED'}
+    
 class SAPIENS_OT_set_empty_types(bpy.types.Operator):
     bl_idname = "sapiens.set_empty_types"
     bl_label = "Apply Type"
@@ -503,6 +527,9 @@ class VIEW3D_PT_sapiens(bpy.types.Panel):
         empty_row = empties_box.row()
         empty_row.operator("sapiens.scale_empties")
         empty_row.operator("sapiens.set_empty_types")
+        empty_row_2 = empties_box.row()
+        empty_row_2.operator("sapiens.hide_empties")
+        empty_row_2.operator("sapiens.show_empties")
         
         
         quick_box = self.layout.box()
@@ -538,6 +565,8 @@ def register():
     bpy.utils.register_class(SAPIENS_OT_import_materials)
     bpy.utils.register_class(SAPIENS_OT_export_materials)
     bpy.utils.register_class(SAPIENS_OT_remove_duplicate_materials)
+    bpy.utils.register_class(SAPIENS_OT_hide_empties)
+    bpy.utils.register_class(SAPIENS_OT_show_empties)
     
     bpy.utils.register_class(VIEW3D_PT_sapiens)
 
@@ -552,6 +581,8 @@ def unregister():
     bpy.utils.unregister_class(SAPIENS_OT_import_materials)
     bpy.utils.unregister_class(SAPIENS_OT_export_materials)
     bpy.utils.unregister_class(SAPIENS_OT_remove_duplicate_materials)
+    bpy.utils.unregister_class(SAPIENS_OT_hide_empties)
+    bpy.utils.unregister_class(SAPIENS_OT_show_empties)
     
     bpy.utils.unregister_class(VIEW3D_PT_sapiens)
 
