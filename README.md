@@ -55,6 +55,10 @@ You can help develop the addon by installing [this extension](https://marketplac
 
 # Version History
 
+## 1.1.0
+
+Adds buttons to hide/show empties.
+
 ## 1.0.0
 
 Initial release, providing the basic support for sapiens models.
