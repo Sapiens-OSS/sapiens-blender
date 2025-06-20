@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import bpy
 import math
 import json
@@ -34,15 +36,6 @@ class SAPIENS_OT_export_parts(bpy.types.Operator):
     bl_idname = "sapiens.export_parts"
     bl_label = "Export Parts"
     bl_description = "Exports every mesh in the model as its own GLTF file."
-
-    def get_model_name(self, mesh_name : str):
-        if "."  in mesh_name:
-            mesh_name = mesh_name.split(".")[0]
-        
-        if "_" in mesh_name:
-            mesh_name = mesh_name.split("_")[0]
-            
-        return mesh_name
     
     def execute(self, context):
         blend_path = Path(bpy.data.filepath)
@@ -61,11 +54,21 @@ class SAPIENS_OT_export_parts(bpy.types.Operator):
         original_active = context.view_layer.objects.active
 
         exported_models = []
-        for obj in bpy.data.objects:
-            if obj.type != 'MESH':
+
+        mesh_wrappers = MeshWrapper.get_sorted_wrappers()
+        any_errors_reported = False
+        for wrapper in mesh_wrappers:
+            
+            if not wrapper.export:
                 continue
 
-            model_name = self.get_model_name(obj.name)
+            if not wrapper.valid:
+                any_errors_reported = True
+                self.report({'WARNING'}, f"Mesh '{wrapper.object_name}' is invalid (missing _index?)")
+                continue
+
+            obj = wrapper.mesh
+            model_name = wrapper.mesh_name
             if model_name in exported_models:
                 continue
             
@@ -101,7 +104,10 @@ class SAPIENS_OT_export_parts(bpy.types.Operator):
             obj.select_set(True)
         context.view_layer.objects.active = original_active
 
-        self.report({'INFO'}, f"Exported {exported_models} to '{export_path}'")
+        if any_errors_reported:
+            self.report({'WARNING'}, f"Exported {exported_models} to '{export_path}' with warnings (click to view)")
+        else:
+            self.report({'INFO'}, f"Exported {exported_models} to '{export_path}'")
         return {'FINISHED'}
     
 class SAPIENS_OT_add_buildables(bpy.types.Operator):
@@ -125,6 +131,65 @@ class SAPIENS_OT_add_buildables(bpy.types.Operator):
 
         self.report({'INFO'}, "Done.")
         return {'FINISHED'}
+
+class MeshWrapper():
+    """
+    Wrapper around a mesh, facilitating some data processing and sorting.
+    """
+
+    def __init__(self, mesh):
+        self.mesh = mesh
+        self.object_name = mesh.name
+        self.export = True
+        self.valid = True
+        self.index = -1
+
+        # The name of the mesh to export (e.g, plank_branch_n) -> plank
+        self.mesh_name = ""
+        # The name of the resource (e.g., plank_branch_n) -> branch
+        self.resource_name = ""
+        # The desired index.
+        self.index = -1
+
+        NO_EXPORT_IDENTIFIER = "noexport"
+        if NO_EXPORT_IDENTIFIER in self.object_name:
+            self.export = False
+
+        try:
+            # Strip any . out (e.g., .0001)
+            working_name = self.object_name
+            if "." in working_name:
+                working_name = working_name.split(".")[0]
+
+            fields = working_name.split("_")
+            self.mesh_name = fields[0]
+            self.resource_name = fields[1]
+            self.index = int(fields[2])
+
+        except Exception:
+            self.valid = False
+
+
+    @staticmethod
+    def get_sorted_wrappers() -> list[MeshWrapper]:
+        mesh_wrappers = []
+
+        for obj in bpy.data.objects:
+            if obj.type == 'MESH':
+                mesh_wrappers.append(MeshWrapper(obj))
+
+        mesh_wrappers.sort()
+        return mesh_wrappers
+    
+    def get_empty_name(self):
+        return f"{self.resource_name}_{self.index}"
+
+    def __lt__(self, other):
+        return (self.mesh_name, self.resource_name, self.index) < (other.mesh_name, other.resource_name, other.index)
+
+    def __eq__(self, other):
+        return (self.mesh_name, self.resource_name, self.index) == (other.mesh_name, other.resource_name, other.index)
+
 
 class MaterialFile():
 
@@ -328,18 +393,6 @@ class SAPIENS_OT_export_empties(bpy.types.Operator):
     bl_idname = "sapiens.export_empties"
     bl_label = "Export Empties"
     bl_description = "Exports the scene with all meshes replaced by empties."
-
-    def get_empty_name(self, mesh_name: str, model_counts: dict):
-        if "." in mesh_name:
-            mesh_name = mesh_name.split(".")[0]
-
-        if "_" in mesh_name:
-            mesh_name = mesh_name.split("_")[1]
-
-        index = model_counts.get(mesh_name, 0) + 1
-        model_counts[mesh_name] = index
-
-        return f"{mesh_name}_{str(index)}"
     
     def execute(self, context):
         export_path = get_export_path(bpy.data.filepath)
@@ -350,27 +403,35 @@ class SAPIENS_OT_export_empties(bpy.types.Operator):
         replacements = []
         new_empties = []
 
-        counts = {}
+        mesh_wrappers = MeshWrapper.get_sorted_wrappers()
+
+        any_warning_reported = False
+
         # Replace all mesh objects with empties
-        for obj in bpy.data.objects:
-            if obj.type == 'MESH':
-                original_name = obj.name
-                renamed_name = f"{original_name}_original"
-                obj.name = renamed_name
+        for wrapper in mesh_wrappers:
+            if not wrapper.valid:
+                any_warning_reported = True
+                self.report({'WARNING'}, f"Mesh '{wrapper.object_name}' is invalid (missing _index?)")
+                continue
 
-                empty = bpy.data.objects.new(self.get_empty_name(original_name, counts), None)
-                empty.empty_display_type = 'PLAIN_AXES'
-                empty.empty_display_size = 0.5
-                empty.matrix_world = obj.matrix_world
-                empty.parent = obj.parent
-                empty.hide_viewport = obj.hide_viewport
-                empty.hide_render = obj.hide_render
+            obj = wrapper.mesh
+            original_name = obj.name
+            renamed_name = f"{original_name}_original"
+            obj.name = renamed_name
 
-                for collection in obj.users_collection:
-                    collection.objects.link(empty)
+            empty = bpy.data.objects.new(wrapper.get_empty_name(), None)
+            empty.empty_display_type = 'PLAIN_AXES'
+            empty.empty_display_size = 0.5
+            empty.matrix_world = obj.matrix_world
+            empty.parent = obj.parent
+            empty.hide_viewport = obj.hide_viewport
+            empty.hide_render = obj.hide_render
 
-                replacements.append((obj, empty, original_name))
-                new_empties.append(empty)
+            for collection in obj.users_collection:
+                collection.objects.link(empty)
+
+            replacements.append((obj, empty, original_name))
+            new_empties.append(empty)
 
         # Deselect all
         bpy.ops.object.select_all(action='DESELECT')
@@ -402,7 +463,10 @@ class SAPIENS_OT_export_empties(bpy.types.Operator):
             # Rename mesh back
             mesh_obj.name = original_name
 
-        self.report({'INFO'}, f"Exported to {export_path}")
+        if any_warning_reported:
+            self.report({'WARNING'}, f"Exported to {export_path} with warnings (click to view)")
+        else:
+            self.report({'INFO'}, f"Exported to {export_path}")
         return {'FINISHED'}
 
     

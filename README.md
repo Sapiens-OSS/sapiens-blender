@@ -55,6 +55,12 @@ You can help develop the addon by installing [this extension](https://marketplac
 
 # Version History
 
+## 1.2.0
+
+BREAKING CHANGE: Models now require index. Example: modelName_resourceName_1.
+
+It's also possible to do this, to avoid the PART from being exported (will still appear in the Empties): `modelName_resourceName_1_noexport`.
+
 ## 1.1.0
 
 Adds buttons to hide/show empties.
