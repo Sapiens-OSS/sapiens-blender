@@ -156,12 +156,7 @@ class MeshWrapper():
             self.export = False
 
         try:
-            # Strip any . out (e.g., .0001)
-            working_name = self.object_name
-            if "." in working_name:
-                working_name = working_name.split(".")[0]
-
-            fields = working_name.split("_")
+            fields = self.object_name.split(" ")
             self.mesh_name = fields[0]
             self.resource_name = fields[1]
             self.index = int(fields[2])
@@ -532,7 +527,7 @@ class SAPIENS_OT_hide_empties(bpy.types.Operator):
     
     def execute(self, context):
         for obj in context.scene.objects:
-            if obj.type == 'EMPTY':
+            if obj.type == 'EMPTY' or obj.type == 'CAMERA':
                 obj.hide_set(True)
         
         return {'FINISHED'}
@@ -544,7 +539,7 @@ class SAPIENS_OT_show_empties(bpy.types.Operator):
     
     def execute(self, context):
         for obj in context.scene.objects:
-            if obj.type == 'EMPTY':
+            if obj.type == 'EMPTY' or obj.type == 'CAMERA':
                 obj.hide_set(False)
         
         return {'FINISHED'}
