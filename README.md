@@ -33,13 +33,16 @@ This addon comes with two helpers for crafting new buildables.
 
 This addon assumes that you model is located directly in a folder called `blends` (not nested). The export buttons allows you to export your model in a few different ways, without needing to manually export the GLTF file. The resulting meshes will be placed into a `models` folder, side-by-side with your blends. From this folder, Sapiens will read the models.
 
-There is also a mesh naming convention. The convention is: `meshName_resourceType.whatever`
-
-NOTE: This doc is out of date. See version 1.2.0 release notes.
+There is also a mesh naming convention. The convention is: `meshName resourceType index.whatever`
 
  - `meshName` is the name of the model. For example if you're creating a chair, `chairBack` and `chairLeg` are reasonable mesh names.
  - `resourceType` should match a resource in Sapiens. Either self-created, or vanilla.
+ - `index` is the index
  - `whatever` Everything after the `.` is ignored. Usually this will be an identifier from blender when duplicating meshes (e.g., `cube_branch.003`)
+
+For example: `meshName resourceType 1` will result in:
+- `meshName.glb` being exported
+- An empty with the name `resourceType_1` as part of the buildable.
 
 ## Simply Export
 
@@ -60,6 +63,11 @@ Even though we had 4 chair legs in our model, only one is exported. This single 
 You can help develop the addon by installing [this extension](https://marketplace.visualstudio.com/items?itemName=JacquesLucke.blender-development), and following the instructions there. PRs and issues welcome.
 
 # Version History
+
+## 1.3.0
+
+BREAKING CHANGE: Models are now seperated by ' ' (space) not '_'.
+Cameras are now exported correctly.
 
 ## 1.2.0
 
