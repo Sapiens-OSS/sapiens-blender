@@ -8,9 +8,13 @@ Sapiens requires models to be setup in a very specific way. This addon helps you
 
 ## Getting Started / Installation
 
-`Edit -> Preferences -> Add-Ons -> (top right dropdown) Install from Disk -> select sapiens-blend.py`
+This plugin is formated as a Blender Extension. To install, you will need to zip up the contents of `sapiens-blender` folder, and then install via:
+
+`Edit -> Preferences -> Add-Ons -> (top right dropdown) Install from Disk -> select sapiens-blender.zip`
 
 After installing, you may need to enable the addon (checkbox). Once enabled, a new `[Sapiens]` button will appear in the context-menu of the main scene. The default shortcut to open this menu is `n`, and then you can navigate from `tool` or `view` to `sapiens`.
+
+Here is [Blenders Documention](https://docs.blender.org/manual/en/latest/editors/preferences/extensions.html#bpy-ops-extensions-package-install-files) if you get stuck.
 
 ## Importing GLTF Files
 
@@ -30,6 +34,8 @@ This addon comes with two helpers for crafting new buildables.
 This addon assumes that you model is located directly in a folder called `blends` (not nested). The export buttons allows you to export your model in a few different ways, without needing to manually export the GLTF file. The resulting meshes will be placed into a `models` folder, side-by-side with your blends. From this folder, Sapiens will read the models.
 
 There is also a mesh naming convention. The convention is: `meshName_resourceType.whatever`
+
+NOTE: This doc is out of date. See version 1.2.0 release notes.
 
  - `meshName` is the name of the model. For example if you're creating a chair, `chairBack` and `chairLeg` are reasonable mesh names.
  - `resourceType` should match a resource in Sapiens. Either self-created, or vanilla.
